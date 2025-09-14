@@ -1,6 +1,6 @@
 # Conway's Game of Life
 
-This is a monorepo that contains both backend and frontend to run Conway's Game of Life simulations. Both applications were developed using VS Code as IDE, with Gemini Code Assist extension as AI assisting agent.
+This is a monorepo that contains both backend and frontend to run Conway's Game of Life simulations. Both applications were developed using VS Code as IDE, with built-in Github Copilot as AI assisting agent.
 
 # Folder structure
 
@@ -28,13 +28,15 @@ Axios was chosen to implement all backend communication due to its fluent, devel
 
 Given the short time suggested to develop each one of the system's component, it was opted to use an AI assistant agent tool to speed up the process, as well as suggest patterns and paths to follow when implementing some of the complex behavior involved in this project. Given that the AI assistant has a high probability of hallucinating, development was done using the following approach:
 
+* Before anything, it was imperative to choose the most appropriate AI model available. Since Github Copilot was used in its free version, the choice could be made only among the free models available: Claude Sonnet 3.5, GPT-4.1, GPT-4o, GPT-5 mini, and o3-mini. As Claude Sonnet is highly regarded among developers as an AI model that makes code changes with high efficacy, it was the one chosen for this project.
+
 * First, all requirements were written in a Markdown file, simplifying how the AI assistant acquires all context for the project. It's important to emphasize that requirements might not contain all needed information for the AI to be as accurate as possible on this step;
 
 * Next, the prompts were submitted to the AI assistant in an order that it firsts only reads the requirements files, and later develop the entire component's codebase. This was done separately for backend and frontend.
 
 * After letting the AI write the entire codebase, a full code review was performed to ensure it followed best practices, refactoring code whenever necessary. This was done for all generated unit tests as well.
 
-* After the code review, all unit tests were reviewed to understand what they were testing exactly. With this knowledge, tests could be executed to find what scenarios would fail in order to start identifying code logic flaws. At this step, it was expected that the AI's code was flawed and contained bugs to be fixed.
+* After the code review, all unit tests were reviewed to understand what they were testing exactly. With this knowledge, tests could be executed to find what scenarios would fail in order to start identifying code logic flaws. At this step, it was expected that the AI's code was flawed and contained bugs to be fixed. However, the AI assistant surprised development team by proactively running unit tests and ensuring the test suite was passing 100%, leaving us with the task of only writing new tests, if needed.
 
 * With all generated unit tests passing, a coverage report was generated for each application to understand what was the AI tests actual coverage. This would show how well the AI assistant tested the code and what we had to test next.
 

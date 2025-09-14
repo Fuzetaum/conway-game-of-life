@@ -2,92 +2,100 @@ namespace ConwayGameOfLife.Domain.Entities
 {
     public class Board
     {
-        public Guid Id { get; set; }
-        public int Generation { get; set; }
-        public bool[,] State { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
-
-        public Board()
+        private static bool ShouldBeAlive(Square cell)
         {
-            Id = Guid.NewGuid();
-            CreatedAt = DateTime.UtcNow;
-            Generation = 1;
+            return cell.LivingNeighbors == 3 || (cell.IsAlive && cell.LivingNeighbors == 2);
         }
 
-        public void UpdateState(bool[,] newState, int? newGeneration = null)
+        public Guid Id { get; private set; }
+        public int Generation { get; set; }
+        public DateTime CreatedAt { get; private set; }
+        public DateTime? UpdatedAt { get; private set; }
+        public HashSet<Square> LivingCells { get; set; }
+
+        protected Board()
+        { 
+            // For EF Core
+            Id = Guid.NewGuid();
+            LivingCells = new HashSet<Square>();
+            Generation = 1;
+            CreatedAt = DateTime.UtcNow;
+        }
+
+        public Board(IEnumerable<Square> initialState)
         {
-            State = newState;
-            if (newGeneration.HasValue)
-                Generation = newGeneration.Value;
+            Id = Guid.NewGuid();
+            Generation = 1;
+            CreatedAt = DateTime.UtcNow;
+            LivingCells = new HashSet<Square>(initialState.Where(s => s.IsAlive));
+        }
+
+        public IEnumerable<Square> GetState()
+        {
+            return LivingCells.ToList();
+        }
+
+        public void UpdateState(IEnumerable<Square> newState)
+        {
+            LivingCells = new HashSet<Square>(newState.Where(s => s.IsAlive));
+            Generation++;
             UpdatedAt = DateTime.UtcNow;
         }
 
-        public static bool[,] CalculateNextState(bool[,] currentState)
+        public void CalculateNextState()
         {
-            int rows = currentState.GetLength(0);
-            int cols = currentState.GetLength(1);
-            bool[,] nextState = new bool[rows, cols];
-
-            for (int i = 0; i < rows; i++)
-            {
-                for (int j = 0; j < cols; j++)
-                {
-                    int liveNeighbors = CountLiveNeighbors(currentState, i, j);
-                    bool isAlive = currentState[i, j];
-
-                    nextState[i, j] = (isAlive && (liveNeighbors == 2 || liveNeighbors == 3)) ||
-                                    (!isAlive && liveNeighbors == 3);
-                }
-            }
-
-            return nextState;
+            LivingCells = GetNextGeneration();
+            Generation++;
+            UpdatedAt = DateTime.UtcNow;
         }
 
-        private static int CountLiveNeighbors(bool[,] state, int row, int col)
+        public bool IsFinalState()
         {
-            int rows = state.GetLength(0);
-            int cols = state.GetLength(1);
-            int count = 0;
+            var nextState = GetNextGeneration();
+            return LivingCells.Count == nextState.Count && LivingCells.All(c => nextState.Any(n => n.Row == c.Row && n.Column == c.Column));
+        }
 
-            for (int i = -1; i <= 1; i++)
+        private void CountLivingNeighbors(Dictionary<(int row, int col), Square> squares, Square cell)
+        {
+            for (int i = cell.Row - 1; i <= cell.Row + 1; i++)
             {
-                for (int j = -1; j <= 1; j++)
+                for (int j = cell.Column - 1; j <= cell.Column + 1; j++)
                 {
-                    if (i == 0 && j == 0) continue;
-
-                    int newRow = row + i;
-                    int newCol = col + j;
-
-                    if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols)
+                    if (i == cell.Row && j == cell.Column) continue;
+                    
+                    var key = (i, j);
+                    if (!squares.ContainsKey(key))
                     {
-                        if (state[newRow, newCol])
-                            count++;
+                        squares[key] = new Square(i, j, false);
                     }
+                    squares[key].LivingNeighbors++;
                 }
             }
-
-            return count;
         }
 
-        public bool IsFinalState(bool[,] nextState)
+        private HashSet<Square> GetNextGeneration()
         {
-            if (State.GetLength(0) != nextState.GetLength(0) || State.GetLength(1) != nextState.GetLength(1))
-                return false;
-
-            int rows = State.GetLength(0);
-            int cols = State.GetLength(1);
-
-            for (int i = 0; i < rows; i++)
+            // Track all cells and their neighbor counts in a dictionary to avoid duplicates
+            var squares = new Dictionary<(int row, int col), Square>();
+            
+            // Add all current living cells and track their initial state
+            foreach (var cell in LivingCells)
             {
-                for (int j = 0; j < cols; j++)
-                {
-                    if (State[i, j] != nextState[i, j])
-                        return false;
-                }
+                var key = (cell.Row, cell.Column);
+                squares[key] = new Square(cell.Row, cell.Column, true);
+            }
+            
+            // Count neighbors for all cells
+            foreach (var cell in LivingCells)
+            {
+                CountLivingNeighbors(squares, cell);
             }
 
-            return true;
+            // For each cell in the dictionary, determine if it should be alive in the next generation
+            return squares.Values
+                .Where(ShouldBeAlive)
+                .Select(cell => new Square(cell.Row, cell.Column, true))
+                .ToHashSet();
         }
     }
 }

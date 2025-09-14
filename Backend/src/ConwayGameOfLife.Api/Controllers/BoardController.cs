@@ -21,17 +21,14 @@ namespace ConwayGameOfLife.Api.Controllers
         [ProducesResponseType(typeof(ErrorResponse), 400)]
         public async Task<IActionResult> Create([FromBody] CreateBoardRequest request)
         {
-            if (request.InitialState == null)
-                return BadRequest(new ErrorResponse { Message = "Initial state is required" });
+            if (request.LivingCells == null)
+                return BadRequest(new ErrorResponse { Message = "Living cells array is required" });
 
-            var board = new Board
-            {
-                State = request.InitialState
-            };
+            var squares = request.LivingCells.Select(c => new Square(c.Row, c.Column, true));
+            var board = new Board(squares);
 
-            var created = await _boardRepository.CreateAsync(board);
-            var response = MapToResponse(created);
-
+            Board created = await _boardRepository.CreateAsync(board);
+            BoardResponse response = MapToResponse(created);
             return CreatedAtAction(nameof(GetById), new { id = response.Id }, response);
         }
 
@@ -57,10 +54,11 @@ namespace ConwayGameOfLife.Api.Controllers
             if (board == null)
                 return NotFound();
 
-            if (request.NewState == null)
-                return BadRequest(new ErrorResponse { Message = "New state is required" });
+            //if (request.NewState == null)
+            //    return BadRequest(new ErrorResponse { Message = "New state is required" });
 
-            board.UpdateState(request.NewState, request.Generation);
+            var newSquares = request.LivingCells.Select(c => new Square(c.Row, c.Column, true));
+            board.UpdateState(newSquares);
             var updated = await _boardRepository.UpdateAsync(board);
 
             return Ok(MapToResponse(updated));
@@ -75,15 +73,10 @@ namespace ConwayGameOfLife.Api.Controllers
             if (board == null)
                 return NotFound();
 
-            var nextState = Board.CalculateNextState(board.State);
-            return Ok(new BoardResponse
-            {
-                Id = board.Id,
-                Generation = board.Generation + 1,
-                State = nextState,
-                CreatedAt = board.CreatedAt,
-                UpdatedAt = DateTime.UtcNow
-            });
+            board.CalculateNextState();
+            var updated = await _boardRepository.UpdateAsync(board);
+            
+            return Ok(MapToResponse(updated));
         }
 
         [HttpPost("{id}/advance")]
@@ -99,68 +92,42 @@ namespace ConwayGameOfLife.Api.Controllers
             if (request.Generations <= 0)
                 return BadRequest(new ErrorResponse { Message = "Number of generations must be positive" });
 
-            var currentState = board.State;
-            var currentGeneration = board.Generation;
-
             for (int i = 0; i < request.Generations; i++)
             {
-                currentState = Board.CalculateNextState(currentState);
-                currentGeneration++;
+                board.CalculateNextState();
             }
 
-            return Ok(new BoardResponse
-            {
-                Id = board.Id,
-                Generation = currentGeneration,
-                State = currentState,
-                CreatedAt = board.CreatedAt,
-                UpdatedAt = DateTime.UtcNow
-            });
+            var updated = await _boardRepository.UpdateAsync(board);
+            return Ok(MapToResponse(updated));
         }
 
         [HttpPost("{id}/final")]
         [ProducesResponseType(typeof(BoardResponse), 200)]
-        [ProducesResponseType(404)]
         [ProducesResponseType(typeof(ErrorResponse), 400)]
+        [ProducesResponseType(404)]
         public async Task<IActionResult> GetFinalState(Guid id, [FromBody] GetFinalStateRequest request)
         {
             var board = await _boardRepository.GetByIdAsync(id);
-            if (!request.MaxGenerations.HasValue)
-                return BadRequest(new ErrorResponse { Message = "Maximum number of generations is required" });
 
             if (board == null)
                 return NotFound();
 
-            var currentState = board.State;
-            var currentGeneration = board.Generation;
-            var maxGenerations = request.MaxGenerations.Value;
             var generationsCount = 0;
 
-            while (generationsCount < maxGenerations)
+            while (generationsCount < request.MaxGenerations)
             {
-                var nextState = Board.CalculateNextState(currentState);
-                generationsCount++;
-                currentGeneration++;
-
-                if (board.IsFinalState(nextState))
+                if (board.IsFinalState())
                 {
-                    return Ok(new BoardResponse
-                    {
-                        Id = board.Id,
-                        Generation = currentGeneration,
-                        State = nextState,
-                        CreatedAt = board.CreatedAt,
-                        UpdatedAt = DateTime.UtcNow
-                    });
+                    return Ok(MapToResponse(board));
                 }
 
-                currentState = nextState;
+                board.CalculateNextState();
+                generationsCount++;
             }
 
             return BadRequest(new ErrorResponse 
             { 
-                Message = "Final state not reached",
-                Details = $"The board does not reach a final state after {maxGenerations} generations"
+                Message = $"The board does not reach a final state after {request.MaxGenerations} generations"
             });
         }
 
@@ -170,30 +137,10 @@ namespace ConwayGameOfLife.Api.Controllers
             {
                 Id = board.Id,
                 Generation = board.Generation,
-                State = board.State,
+                LivingCells = board.GetState().Select(s => new CellDto { Row = s.Row, Column = s.Column }),
                 CreatedAt = board.CreatedAt,
                 UpdatedAt = board.UpdatedAt
             };
-        }
-
-        private static bool AreStatesEqual(bool[,] state1, bool[,] state2)
-        {
-            if (state1.GetLength(0) != state2.GetLength(0) || state1.GetLength(1) != state2.GetLength(1))
-                return false;
-
-            int rows = state1.GetLength(0);
-            int cols = state1.GetLength(1);
-
-            for (int i = 0; i < rows; i++)
-            {
-                for (int j = 0; j < cols; j++)
-                {
-                    if (state1[i, j] != state2[i, j])
-                        return false;
-                }
-            }
-
-            return true;
         }
     }
 }

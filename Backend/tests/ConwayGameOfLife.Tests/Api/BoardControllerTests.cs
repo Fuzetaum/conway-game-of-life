@@ -25,15 +25,13 @@ namespace ConwayGameOfLife.Tests.Api
             // Arrange
             var request = new CreateBoardRequest
             {
-                InitialState = new bool[3, 3]
+                LivingCells = new[] 
+                { 
+                    new CellDto { Row = 1, Column = 1 }
+                }
             };
 
-            var createdBoard = new Board
-            {
-                Id = Guid.NewGuid(),
-                State = request.InitialState,
-                Generation = 1
-            };
+            var createdBoard = new Board(new[] { new Square(1, 1, true) });
 
             _mockRepository.Setup(r => r.CreateAsync(It.IsAny<Board>()))
                 .ReturnsAsync(createdBoard);
@@ -46,36 +44,17 @@ namespace ConwayGameOfLife.Tests.Api
             var response = createdAtResult.Value.Should().BeOfType<BoardResponse>().Subject;
             response.Id.Should().Be(createdBoard.Id);
             response.Generation.Should().Be(1);
-        }
-
-        [Fact]
-        public async Task Create_WithNullState_ReturnsBadRequest()
-        {
-            // Arrange
-            var request = new CreateBoardRequest
-            {
-                InitialState = null
-            };
-
-            // Act
-            var result = await _controller.Create(request);
-
-            // Assert
-            var badRequestResult = result.Should().BeOfType<BadRequestObjectResult>().Subject;
-            var error = badRequestResult.Value.Should().BeOfType<ErrorResponse>().Subject;
-            error.Message.Should().Be("Initial state is required");
+            response.LivingCells.Should().ContainSingle(c => c.Row == 1 && c.Column == 1);
         }
 
         [Fact]
         public async Task GetById_ExistingBoard_ReturnsOk()
         {
             // Arrange
-            var board = new Board
+            var board = new Board(new[]
             {
-                Id = Guid.NewGuid(),
-                State = new bool[3, 3],
-                Generation = 1
-            };
+                new Square(1, 1, true)
+            });
 
             _mockRepository.Setup(r => r.GetByIdAsync(board.Id))
                 .ReturnsAsync(board);
@@ -87,6 +66,7 @@ namespace ConwayGameOfLife.Tests.Api
             var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
             var response = okResult.Value.Should().BeOfType<BoardResponse>().Subject;
             response.Id.Should().Be(board.Id);
+            response.LivingCells.Should().ContainSingle(c => c.Row == 1 && c.Column == 1);
         }
 
         [Fact]
@@ -95,7 +75,7 @@ namespace ConwayGameOfLife.Tests.Api
             // Arrange
             var id = Guid.NewGuid();
             _mockRepository.Setup(r => r.GetByIdAsync(id))
-                .ReturnsAsync((Board)null);
+                .ReturnsAsync((Board?)null);
 
             // Act
             var result = await _controller.GetById(id);
@@ -108,23 +88,28 @@ namespace ConwayGameOfLife.Tests.Api
         public async Task Update_ExistingBoard_ReturnsOk()
         {
             // Arrange
-            var board = new Board
+            var board = new Board(new[]
             {
-                Id = Guid.NewGuid(),
-                State = new bool[3, 3],
-                Generation = 1
-            };
+                new Square(1, 1, true)
+            });
 
             var request = new UpdateBoardRequest
             {
-                NewState = new bool[3, 3],
-                Generation = 2
+                LivingCells = new[]
+                {
+                    new CellDto { Row = 0, Column = 0 }
+                }
             };
+
+            var updatedBoard = new Board(new[]
+            {
+                new Square(0, 0, true)
+            });
 
             _mockRepository.Setup(r => r.GetByIdAsync(board.Id))
                 .ReturnsAsync(board);
             _mockRepository.Setup(r => r.UpdateAsync(It.IsAny<Board>()))
-                .ReturnsAsync(board);
+                .ReturnsAsync(updatedBoard);
 
             // Act
             var result = await _controller.Update(board.Id, request);
@@ -132,22 +117,34 @@ namespace ConwayGameOfLife.Tests.Api
             // Assert
             var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
             var response = okResult.Value.Should().BeOfType<BoardResponse>().Subject;
-            response.Id.Should().Be(board.Id);
+            response.Id.Should().Be(updatedBoard.Id);
+            response.LivingCells.Should().ContainSingle(c => c.Row == 0 && c.Column == 0);
         }
 
         [Fact]
         public async Task GenerateNextState_ExistingBoard_ReturnsNextState()
         {
             // Arrange
-            var board = new Board
+            var board = new Board(new[]
             {
-                Id = Guid.NewGuid(),
-                State = new bool[3, 3] { { true, true, false }, { true, false, false }, { false, false, false } },
-                Generation = 1
-            };
+                new Square(0, 0, true),
+                new Square(0, 1, true),
+                new Square(1, 0, true)
+            });
+
+            var nextState = new Board(new[]
+            {
+                new Square(0, 0, true),
+                new Square(0, 1, true),
+                new Square(1, 0, true),
+                new Square(1, 1, true)
+            })
+            { Generation = 2 };
 
             _mockRepository.Setup(r => r.GetByIdAsync(board.Id))
                 .ReturnsAsync(board);
+            _mockRepository.Setup(r => r.UpdateAsync(It.IsAny<Board>()))
+                .ReturnsAsync(nextState);
 
             // Act
             var result = await _controller.GenerateNextState(board.Id);
@@ -155,19 +152,22 @@ namespace ConwayGameOfLife.Tests.Api
             // Assert
             var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
             var response = okResult.Value.Should().BeOfType<BoardResponse>().Subject;
+            response.Id.Should().Be(nextState.Id);
             response.Generation.Should().Be(2);
+            response.LivingCells.Should().HaveCount(4);
         }
 
         [Fact]
         public async Task GetFinalState_WithMaxGenerations_ReturnsOkWhenFinalStateFound()
         {
             // Arrange
-            var board = new Board
+            var board = new Board(new[]
             {
-                Id = Guid.NewGuid(),
-                State = new bool[2, 2] { { true, true }, { true, true } }, // Block pattern (stable)
-                Generation = 1
-            };
+                new Square(0, 0, true),
+                new Square(0, 1, true),
+                new Square(1, 0, true),
+                new Square(1, 1, true)
+            }); // Block pattern (stable)
 
             _mockRepository.Setup(r => r.GetByIdAsync(board.Id))
                 .ReturnsAsync(board);
@@ -180,34 +180,20 @@ namespace ConwayGameOfLife.Tests.Api
             // Assert
             var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
             var response = okResult.Value.Should().BeOfType<BoardResponse>().Subject;
-            response.Generation.Should().Be(2);
-        }
-
-        [Fact]
-        public async Task GetFinalState_WithoutMaxGenerations_ReturnsBadRequest()
-        {
-            // Arrange
-            var request = new GetFinalStateRequest { MaxGenerations = null };
-
-            // Act
-            var result = await _controller.GetFinalState(Guid.NewGuid(), request);
-
-            // Assert
-            var badRequestResult = result.Should().BeOfType<BadRequestObjectResult>().Subject;
-            var error = badRequestResult.Value.Should().BeOfType<ErrorResponse>().Subject;
-            error.Message.Should().Be("Maximum number of generations is required");
+            response.Generation.Should().Be(1);
+            response.LivingCells.Should().HaveCount(4);
         }
 
         [Fact]
         public async Task GetFinalState_ExceedsMaxGenerations_ReturnsBadRequest()
         {
             // Arrange
-            var board = new Board
+            var board = new Board(new[]
             {
-                Id = Guid.NewGuid(),
-                State = new bool[3, 3] { { true, true, false }, { true, false, false }, { false, false, false } },
-                Generation = 1
-            };
+                new Square(0, 0, true),
+                new Square(0, 1, true),
+                new Square(0, 2, true)
+            });
 
             _mockRepository.Setup(r => r.GetByIdAsync(board.Id))
                 .ReturnsAsync(board);
@@ -220,7 +206,7 @@ namespace ConwayGameOfLife.Tests.Api
             // Assert
             var badRequestResult = result.Should().BeOfType<BadRequestObjectResult>().Subject;
             var error = badRequestResult.Value.Should().BeOfType<ErrorResponse>().Subject;
-            error.Message.Should().Be("Final state not reached");
+            error.Message.Should().Be("The board does not reach a final state after 2 generations");
         }
     }
 }

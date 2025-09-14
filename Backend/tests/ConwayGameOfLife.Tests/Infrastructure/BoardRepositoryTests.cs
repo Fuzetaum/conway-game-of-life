@@ -25,10 +25,7 @@ namespace ConwayGameOfLife.Tests.Infrastructure
         public async Task CreateAsync_ShouldAddBoardToDatabase()
         {
             // Arrange
-            var board = new Board
-            {
-                State = new bool[3, 3]
-            };
+            var board = new Board(Array.Empty<Square>());
 
             // Act
             var result = await _repository.CreateAsync(board);
@@ -45,10 +42,7 @@ namespace ConwayGameOfLife.Tests.Infrastructure
         public async Task GetByIdAsync_ExistingBoard_ShouldReturnBoard()
         {
             // Arrange
-            var board = new Board
-            {
-                State = new bool[3, 3]
-            };
+            var board = new Board(Array.Empty<Square>());
             _context.Boards.Add(board);
             await _context.SaveChangesAsync();
 
@@ -74,15 +68,17 @@ namespace ConwayGameOfLife.Tests.Infrastructure
         public async Task UpdateAsync_ShouldUpdateBoardInDatabase()
         {
             // Arrange
-            var board = new Board
-            {
-                State = new bool[3, 3]
-            };
+            var board = new Board(Array.Empty<Square>());
             _context.Boards.Add(board);
             await _context.SaveChangesAsync();
 
-            var newState = new bool[3, 3] { { true, false, false }, { false, true, false }, { false, false, true } };
-            board.UpdateState(newState, 2);
+            var newState = new HashSet<Square>
+            {
+                new(0, 0, true),
+                new(1, 1, true),
+                new(2, 2, true)
+            };
+            board.UpdateState(newState);
 
             // Act
             var result = await _repository.UpdateAsync(board);
@@ -91,13 +87,13 @@ namespace ConwayGameOfLife.Tests.Infrastructure
             result.Should().NotBeNull();
             result.Generation.Should().Be(2);
             result.UpdatedAt.Should().NotBeNull();
-            result.State.Should().BeEquivalentTo(newState);
+            result.GetState().Should().BeEquivalentTo(newState);
 
             var savedBoard = await _context.Boards.FindAsync(board.Id);
             savedBoard.Should().NotBeNull();
             savedBoard!.Generation.Should().Be(2);
             savedBoard.UpdatedAt.Should().NotBeNull();
-            savedBoard.State.Should().BeEquivalentTo(newState);
+            savedBoard.GetState().Should().BeEquivalentTo(newState);
         }
 
         public void Dispose()

@@ -4,12 +4,12 @@ namespace ConwayGameOfLife.Api.Models
 {
     public class CreateBoardRequest
     {
-        public bool[,] InitialState { get; set; }
+        public required IEnumerable<CellDto> LivingCells { get; set; }
     }
 
     public class UpdateBoardRequest
     {
-        public bool[,] NewState { get; set; }
+        public required IEnumerable<CellDto> LivingCells { get; set; }
         public int? Generation { get; set; }
     }
 
@@ -27,21 +27,26 @@ namespace ConwayGameOfLife.Api.Models
     public class GetFinalStateRequest
     {
         public Guid BoardId { get; set; }
-        public int? MaxGenerations { get; set; }
+        public required int MaxGenerations { get; set; }
     }
 
     public class BoardResponse
     {
         public Guid Id { get; set; }
         public int Generation { get; set; }
-        public bool[,] State { get; set; }
+        public required IEnumerable<CellDto> LivingCells { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
     }
 
+    public class CellDto
+    {
+        public required int Row { get; set; }
+        public required int Column { get; set; }
+    }
+
     public class ErrorResponse
     {
-        public string Message { get; set; }
-        public string Details { get; set; }
+        public required string Message { get; set; }
     }
 }

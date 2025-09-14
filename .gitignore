@@ -1,3 +1,6 @@
+# VS Code folder
+.vscode/
+
 # .NET binary target folders
 Backend/src/ConwayGameOfLife.Api/obj/
 Backend/src/ConwayGameOfLife.Api/bin/

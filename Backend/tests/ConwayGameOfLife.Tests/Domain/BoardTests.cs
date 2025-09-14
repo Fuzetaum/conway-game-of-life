@@ -9,29 +9,54 @@ namespace ConwayGameOfLife.Tests.Domain
         public void Constructor_ShouldInitializeCorrectly()
         {
             // Act
-            var board = new Board();
+            var board = new Board(Array.Empty<Square>());
 
             // Assert
             board.Id.Should().NotBe(Guid.Empty);
             board.Generation.Should().Be(1);
             board.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1));
             board.UpdatedAt.Should().BeNull();
+            board.GetState().Should().BeEmpty();
+        }
+
+        [Fact]
+        public void Constructor_WithInitialState_ShouldInitializeCorrectly()
+        {
+            // Arrange
+            var initialState = new[] { new Square(1, 1, true), new Square(1, 2, true) };
+
+            // Act
+            var board = new Board(initialState);
+
+            // Assert
+            board.Id.Should().NotBe(Guid.Empty);
+            board.Generation.Should().Be(1);
+            board.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1));
+            board.UpdatedAt.Should().BeNull();
+            
+            var state = board.GetState().ToList();
+            state.Should().HaveCount(2);
+            state.Should().ContainSingle(s => s.Row == 1 && s.Column == 1 && s.IsAlive);
+            state.Should().ContainSingle(s => s.Row == 1 && s.Column == 2 && s.IsAlive);
         }
 
         [Fact]
         public void UpdateState_ShouldUpdateStateAndTimestamp()
         {
             // Arrange
-            var board = new Board();
-            var newState = new bool[3, 3];
-            var newGeneration = 2;
+            var board = new Board(Array.Empty<Square>());
+            var newState = new[] { new Square(1, 1, true) };
 
             // Act
-            board.UpdateState(newState, newGeneration);
+            board.UpdateState(newState);
 
             // Assert
-            board.State.Should().BeSameAs(newState);
-            board.Generation.Should().Be(newGeneration);
+            var state = board.GetState().ToList();
+            state.Should().HaveCount(1);
+            state[0].Row.Should().Be(1);
+            state[0].Column.Should().Be(1);
+            state[0].IsAlive.Should().BeTrue();
+            board.Generation.Should().Be(2);
             board.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1));
         }
 
@@ -39,141 +64,161 @@ namespace ConwayGameOfLife.Tests.Domain
         public void CalculateNextState_EmptyBoard_ShouldRemainEmpty()
         {
             // Arrange
-            bool[,] currentState = new bool[3, 3];
+            var board = new Board(Array.Empty<Square>());
 
             // Act
-            var nextState = Board.CalculateNextState(currentState);
+            board.CalculateNextState();
 
             // Assert
-            for (int i = 0; i < 3; i++)
-                for (int j = 0; j < 3; j++)
-                    nextState[i, j].Should().BeFalse();
+            board.GetState().Should().BeEmpty();
+            board.Generation.Should().Be(2);
         }
 
         [Fact]
         public void CalculateNextState_SingleCell_ShouldDie()
         {
             // Arrange
-            bool[,] currentState = new bool[3, 3];
-            currentState[1, 1] = true;
+            var board = new Board(new[] { new Square(1, 1, true) });
 
             // Act
-            var nextState = Board.CalculateNextState(currentState);
+            board.CalculateNextState();
 
             // Assert
-            nextState[1, 1].Should().BeFalse("A live cell with fewer than two live neighbors dies");
+            board.GetState().Should().BeEmpty();
+            board.Generation.Should().Be(2);
         }
 
         [Fact]
         public void CalculateNextState_Block_ShouldRemainStable()
         {
             // Arrange
-            bool[,] currentState = new bool[4, 4];
-            // Create a block pattern (2x2 square)
-            currentState[1, 1] = true;
-            currentState[1, 2] = true;
-            currentState[2, 1] = true;
-            currentState[2, 2] = true;
+            var board = new Board(new[]
+            {
+                new Square(1, 1, true),
+                new Square(1, 2, true),
+                new Square(2, 1, true),
+                new Square(2, 2, true)
+            });
 
             // Act
-            var nextState = Board.CalculateNextState(currentState);
+            board.CalculateNextState();
 
             // Assert
-            nextState[1, 1].Should().BeTrue();
-            nextState[1, 2].Should().BeTrue();
-            nextState[2, 1].Should().BeTrue();
-            nextState[2, 2].Should().BeTrue();
-            
-            // Check that no other cells became alive
-            int liveCount = 0;
-            for (int i = 0; i < 4; i++)
-                for (int j = 0; j < 4; j++)
-                    if (nextState[i, j]) liveCount++;
-            liveCount.Should().Be(4);
+            var state = board.GetState().ToList();
+            state.Should().HaveCount(4);
+            state.Should().ContainSingle(s => s.Row == 1 && s.Column == 1 && s.IsAlive);
+            state.Should().ContainSingle(s => s.Row == 1 && s.Column == 2 && s.IsAlive);
+            state.Should().ContainSingle(s => s.Row == 2 && s.Column == 1 && s.IsAlive);
+            state.Should().ContainSingle(s => s.Row == 2 && s.Column == 2 && s.IsAlive);
+            board.Generation.Should().Be(2);
         }
 
         [Fact]
         public void CalculateNextState_Blinker_ShouldOscillate()
         {
             // Arrange
-            bool[,] currentState = new bool[5, 5];
-            // Create a horizontal line
-            currentState[2, 1] = true;
-            currentState[2, 2] = true;
-            currentState[2, 3] = true;
+            var board = new Board(new[]
+            {
+                new Square(2, 1, true),
+                new Square(2, 2, true),
+                new Square(2, 3, true)
+            });
 
             // Act
-            var nextState = Board.CalculateNextState(currentState);
+            board.CalculateNextState();
 
-            // Assert
-            // Should become a vertical line
-            nextState[1, 2].Should().BeTrue();
-            nextState[2, 2].Should().BeTrue();
-            nextState[3, 2].Should().BeTrue();
-            
-            // Check that no other cells became alive
-            int liveCount = 0;
-            for (int i = 0; i < 5; i++)
-                for (int j = 0; j < 5; j++)
-                    if (nextState[i, j]) liveCount++;
-            liveCount.Should().Be(3);
+            // Assert - Should become vertical
+            var state = board.GetState().ToList();
+            state.Should().HaveCount(3);
+            state.Should().ContainSingle(s => s.Row == 1 && s.Column == 2 && s.IsAlive);
+            state.Should().ContainSingle(s => s.Row == 2 && s.Column == 2 && s.IsAlive);
+            state.Should().ContainSingle(s => s.Row == 3 && s.Column == 2 && s.IsAlive);
+            board.Generation.Should().Be(2);
+
+            // Act again
+            board.CalculateNextState();
+
+            // Assert - Should return to horizontal
+            state = board.GetState().ToList();
+            state.Should().HaveCount(3);
+            state.Should().ContainSingle(s => s.Row == 2 && s.Column == 1 && s.IsAlive);
+            state.Should().ContainSingle(s => s.Row == 2 && s.Column == 2 && s.IsAlive);
+            state.Should().ContainSingle(s => s.Row == 2 && s.Column == 3 && s.IsAlive);
+            board.Generation.Should().Be(3);
         }
 
         [Fact]
-        public void IsFinalState_SameStates_ShouldReturnTrue()
+        public void CalculateNextState_WithGrowingBoard_ShouldReturnTrue()
         {
             // Arrange
-            var board = new Board();
-            bool[,] state = new bool[3, 3];
-            state[1, 1] = true;
-            board.State = state;
-
-            // Create an identical state
-            bool[,] nextState = new bool[3, 3];
-            nextState[1, 1] = true;
+            var board = new Board(new[] {
+                new Square(0, 0, true),
+                new Square(0, 1, true),
+                new Square(0, 2, true),
+                new Square(1, 0, true),
+                new Square(1, 2, true),
+                new Square(2, 0, true),
+                new Square(2, 1, true),
+                new Square(2, 2, true),
+            });
 
             // Act
-            var result = board.IsFinalState(nextState);
+            board.CalculateNextState();
 
             // Assert
-            result.Should().BeTrue();
+            var state = board.GetState().ToList();
+            state.Should().NotBeEmpty();
+            board.Generation.Should().Be(2);
+            board.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1));
         }
 
         [Fact]
-        public void IsFinalState_DifferentStates_ShouldReturnFalse()
+        public void IsFinalState_ShouldReturnTrueForStablePattern()
         {
-            // Arrange
-            var board = new Board();
-            bool[,] state = new bool[3, 3];
-            state[1, 1] = true;
-            board.State = state;
+            // Arrange - Create a block pattern
+            var board = new Board(new[]
+            {
+                new Square(1, 1, true),
+                new Square(1, 2, true),
+                new Square(2, 1, true),
+                new Square(2, 2, true)
+            });
 
-            // Create a different state
-            bool[,] nextState = new bool[3, 3];
-            nextState[1, 2] = true;
-
-            // Act
-            var result = board.IsFinalState(nextState);
-
-            // Assert
-            result.Should().BeFalse();
+            // Act & Assert
+            board.IsFinalState().Should().BeTrue();
         }
 
         [Fact]
-        public void IsFinalState_DifferentSizes_ShouldReturnFalse()
+        public void IsFinalState_ShouldReturnFalseForOscillatingPattern()
+        {
+            // Arrange - Create a blinker pattern
+            var board = new Board(new[]
+            {
+                new Square(2, 1, true),
+                new Square(2, 2, true),
+                new Square(2, 3, true)
+            });
+
+            // Act & Assert
+            board.IsFinalState().Should().BeFalse();
+        }
+
+        [Theory]
+        [InlineData(-1, 0)]
+        [InlineData(0, -1)]
+        [InlineData(3, 0)]
+        [InlineData(0, 3)]
+        public void UpdateState_WithCoordinatesOutsideInitialBoard_ShouldWork(int row, int col)
         {
             // Arrange
-            var board = new Board();
-            board.State = new bool[3, 3];
-
-            // Create a state with different dimensions
-            bool[,] nextState = new bool[4, 4];
+            var board = new Board(Array.Empty<Square>());
+            var newState = new[] { new Square(row, col, true) };
 
             // Act
-            var result = board.IsFinalState(nextState);
+            board.UpdateState(newState);
 
             // Assert
-            result.Should().BeFalse();
+            board.GetState().Should().ContainSingle(s => s.Row == row && s.Column == col && s.IsAlive);
         }
     }
 }

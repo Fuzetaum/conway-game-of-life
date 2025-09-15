@@ -1,69 +1,101 @@
-import { render, screen } from '@testing-library/react';
-import { useBoard } from '@hooks/useBoard';
+import { screen } from '@testing-library/react';
+import { renderWithBoardProvider, mockBoardWithCells } from '../__tests__/testUtils';
 import App from '../App';
 
-// Mock the useBoard hook and components
-jest.mock('@hooks/useBoard');
-jest.mock('@components/Controls', () => () => <div data-testid="mock-controls">Controls</div>);
-jest.mock('@components/GameBoard', () => () => <div data-testid="mock-gameboard">GameBoard</div>);
+// Mock the child components
+jest.mock('@components/Controls', () => {
+  return function MockControls() {
+    return <div data-testid="mock-controls">Controls Component</div>;
+  };
+});
+
+jest.mock('@components/GameBoard', () => {
+  return function MockGameBoard() {
+    return <div data-testid="mock-gameboard">GameBoard Component</div>;
+  };
+});
 
 describe('App', () => {
-  const mockUseBoard = useBoard as jest.MockedFunction<typeof useBoard>;
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-    
-    // Default mock implementation
-    mockUseBoard.mockReturnValue({
-      board: null,
-      boardId: null,
-      loading: false,
-      error: null,
-      localChanges: false,
-      createNewBoard: jest.fn(),
-      saveBoard: jest.fn(),
-      fetchNextState: jest.fn(),
-      skipGenerations: jest.fn(),
-      getFinalState: jest.fn(),
-      toggleSquare: jest.fn()
-    });
+  it('renders the title', async () => {
+    await renderWithBoardProvider(<App />);
+    expect(screen.getByText("Conway's Game of Life")).toBeInTheDocument();
   });
 
-  it('renders main components', () => {
-    render(<App />);
-    
-    expect(screen.getByText("Conway's Game of Life")).toBeInTheDocument();
+  it('renders Controls component', async () => {
+    await renderWithBoardProvider(<App />);
     expect(screen.getByTestId('mock-controls')).toBeInTheDocument();
+  });
+
+  it('renders GameBoard component', async () => {
+    await renderWithBoardProvider(<App />);
     expect(screen.getByTestId('mock-gameboard')).toBeInTheDocument();
   });
 
-  it('displays "Board not yet created" message when no board exists', () => {
-    mockUseBoard.mockReturnValue({
-      ...mockUseBoard(),
-      boardId: null
-    });
-
-    render(<App />);
+  it('shows board not created message when no board exists', async () => {
+    await renderWithBoardProvider(<App />);
     expect(screen.getByText('Board not yet created')).toBeInTheDocument();
   });
 
-  it('displays error message when there is an error', () => {
-    mockUseBoard.mockReturnValue({
-      ...mockUseBoard(),
-      error: 'Test error message'
-    });
+  it('does not show board not created message when board exists', async () => {
+    const mockContext = {
+      boardId: 'test-id',
+      board: mockBoardWithCells,
+      error: null,
+      loading: false,
+      localChanges: false,
+      createCleanBoard: jest.fn(),
+      createBoard: jest.fn(),
+      toggleSquare: jest.fn(),
+      saveBoard: jest.fn(),
+      loadBoard: jest.fn(),
+      fetchNextState: jest.fn(),
+      skipGenerations: jest.fn(),
+      getFinalState: jest.fn(),
+      createRandomBoard: jest.fn()
+    };
 
-    render(<App />);
+    await renderWithBoardProvider(<App />, mockContext);
+    expect(screen.queryByText('Board not yet created')).not.toBeInTheDocument();
+  });
+
+  it('displays error message when there is an error', async () => {
+    const mockContext = {
+      boardId: null,
+      board: undefined,
+      error: 'Test error message',
+      loading: false,
+      localChanges: false,
+      createCleanBoard: jest.fn(),
+      createBoard: jest.fn(),
+      toggleSquare: jest.fn(),
+      saveBoard: jest.fn(),
+      loadBoard: jest.fn(),
+      fetchNextState: jest.fn(),
+      skipGenerations: jest.fn(),
+      getFinalState: jest.fn(),
+      createRandomBoard: jest.fn()
+    };
+    
+    await renderWithBoardProvider(<App />, mockContext);
     expect(screen.getByText('Test error message')).toBeInTheDocument();
   });
 
-  it('does not show board creation message when board exists', () => {
-    mockUseBoard.mockReturnValue({
-      ...mockUseBoard(),
-      boardId: 'test-id'
-    });
+  it('applies correct styling classes', async () => {
+    const { container } = await renderWithBoardProvider(<App />);
+    
+    // Check the main container
+    const mainContainer = container.firstChild as HTMLElement;
+    expect(mainContainer).toHaveClass('min-h-screen', 'bg-gray-100', 'p-8');
 
-    render(<App />);
-    expect(screen.queryByText('Board not yet created')).not.toBeInTheDocument();
+    // Check the content wrapper
+    const wrapper = mainContainer.firstChild as HTMLElement;
+    expect(wrapper).toHaveClass('max-w-6xl', 'mx-auto');
+
+    // Check the board container
+    const gameContainer = screen.getByTestId('mock-gameboard')
+      .closest('div')  // Gets the mt-6 div
+      ?.parentElement  // Gets the parent div with our target classes
+      ?.parentElement; // Gets the bg-white container
+    expect(gameContainer).toHaveClass('bg-white', 'rounded-lg', 'shadow-lg', 'p-6');
   });
 });

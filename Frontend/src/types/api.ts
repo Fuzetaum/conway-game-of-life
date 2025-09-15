@@ -1,6 +1,6 @@
 export interface Square {
-  x: number;
-  y: number;
+  Row: number;
+  Column: number;
 }
 
 export interface Board {
@@ -14,15 +14,11 @@ export interface Board {
 }
 
 export interface CreateBoardRequest {
-  dimensions: {
-    width: number;
-    height: number;
-  };
-  livingCells: Square[];
+  LivingCells: Square[];
 }
 
 export interface UpdateBoardRequest {
-  livingCells: Square[];
+  LivingCells: Square[];  // Fixed to match backend casing
 }
 
 export interface GenerationRequest {

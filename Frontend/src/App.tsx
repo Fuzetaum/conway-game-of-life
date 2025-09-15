@@ -1,6 +1,6 @@
 import GameBoard from '@components/GameBoard';
 import Controls from '@components/Controls';
-import { useBoard } from '@hooks/useBoard';
+import { useBoard } from '@context/BoardContext';
 
 function App() {
   const { boardId, error } = useBoard();

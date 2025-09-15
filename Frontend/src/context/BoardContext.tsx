@@ -46,8 +46,7 @@ export const BoardProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setLoading(true);
       setError(null);
       const newBoard = await boardService.create({
-        dimensions: board.dimensions,
-        livingCells: board.livingCells
+        LivingCells: board.livingCells
       });
       setBoard(newBoard);
       setBoardId(newBoard.id);
@@ -64,12 +63,12 @@ export const BoardProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const toggleSquare = useCallback(({ x, y }: { x: number; y: number }) => {
     setBoard(currentBoard => {
       const newLivingCells = [...currentBoard.livingCells];
-      const existingIndex = newLivingCells.findIndex(cell => cell.x === x && cell.y === y);
+      const existingIndex = newLivingCells.findIndex(cell => cell.Column === x && cell.Row === y);
       
       if (existingIndex >= 0) {
         newLivingCells.splice(existingIndex, 1);
       } else {
-        newLivingCells.push({ x, y });
+        newLivingCells.push({ Column: x, Row: y });
       }
 
       return { ...currentBoard, livingCells: newLivingCells };
@@ -84,7 +83,7 @@ export const BoardProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setLoading(true);
       setError(null);
       const updatedBoard = await boardService.update(boardId, {
-        livingCells: board.livingCells
+        LivingCells: board.livingCells
       });
       setBoard(updatedBoard);
       setLocalChanges(false);

@@ -1,0 +1,50 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{90142ABD-9E7C-44DA-B4D9-CF74A7B03AF0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConwayGameOfLife.Api", "src\ConwayGameOfLife.Api\ConwayGameOfLife.Api.csproj", "{F4FA1FE9-2E8E-43FC-8178-B58F39B4376C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConwayGameOfLife.Domain", "src\ConwayGameOfLife.Domain\ConwayGameOfLife.Domain.csproj", "{BC88D72C-6A59-496E-A794-88771EC0C521}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConwayGameOfLife.Infrastructure", "src\ConwayGameOfLife.Infrastructure\ConwayGameOfLife.Infrastructure.csproj", "{A5FACCFF-D4D3-4AFB-9164-2C8DAA0F48E8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0CC7255D-095F-4CA9-A3E6-AA8598C8653D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConwayGameOfLife.Tests", "tests\ConwayGameOfLife.Tests\ConwayGameOfLife.Tests.csproj", "{5EC0308C-56D6-4745-8571-2D8717940D49}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F4FA1FE9-2E8E-43FC-8178-B58F39B4376C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4FA1FE9-2E8E-43FC-8178-B58F39B4376C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4FA1FE9-2E8E-43FC-8178-B58F39B4376C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4FA1FE9-2E8E-43FC-8178-B58F39B4376C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BC88D72C-6A59-496E-A794-88771EC0C521}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BC88D72C-6A59-496E-A794-88771EC0C521}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BC88D72C-6A59-496E-A794-88771EC0C521}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BC88D72C-6A59-496E-A794-88771EC0C521}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A5FACCFF-D4D3-4AFB-9164-2C8DAA0F48E8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A5FACCFF-D4D3-4AFB-9164-2C8DAA0F48E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A5FACCFF-D4D3-4AFB-9164-2C8DAA0F48E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A5FACCFF-D4D3-4AFB-9164-2C8DAA0F48E8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5EC0308C-56D6-4745-8571-2D8717940D49}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5EC0308C-56D6-4745-8571-2D8717940D49}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5EC0308C-56D6-4745-8571-2D8717940D49}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5EC0308C-56D6-4745-8571-2D8717940D49}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{F4FA1FE9-2E8E-43FC-8178-B58F39B4376C} = {90142ABD-9E7C-44DA-B4D9-CF74A7B03AF0}
+		{BC88D72C-6A59-496E-A794-88771EC0C521} = {90142ABD-9E7C-44DA-B4D9-CF74A7B03AF0}
+		{A5FACCFF-D4D3-4AFB-9164-2C8DAA0F48E8} = {90142ABD-9E7C-44DA-B4D9-CF74A7B03AF0}
+		{5EC0308C-56D6-4745-8571-2D8717940D49} = {0CC7255D-095F-4CA9-A3E6-AA8598C8653D}
+	EndGlobalSection
+EndGlobal

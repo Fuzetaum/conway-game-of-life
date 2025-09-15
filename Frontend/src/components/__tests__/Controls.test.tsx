@@ -1,153 +1,201 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { useBoard } from '@hooks/useBoard';
+import { screen, fireEvent } from '@testing-library/react';
+import { renderWithBoardProvider, mockBoardWithCells } from '../../__tests__/testUtils';
+import { act } from 'react';
 import Controls from '../Controls';
 
-// Mock the useBoard hook
-jest.mock('@hooks/useBoard');
-
 describe('Controls', () => {
-  const mockUseBoard = useBoard as jest.MockedFunction<typeof useBoard>;
-  
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('renders all control buttons', async () => {
+    await renderWithBoardProvider(<Controls />);
+
+    expect(screen.getByTestId('new-board-button')).toBeInTheDocument();
+    expect(screen.getByTestId('save-board-button')).toBeInTheDocument();
+    expect(screen.getByTestId('load-board-button')).toBeInTheDocument();
+    expect(screen.getByTestId('simulation-button')).toBeInTheDocument();
+    expect(screen.getByTestId('next-generation-button')).toBeInTheDocument();
+    expect(screen.getByTestId('skip-button')).toBeInTheDocument();
+  });
+
+  it('creates a new board when clicking New board button', async () => {
+    const createCleanBoard = jest.fn().mockResolvedValue(true);
     
-    // Default mock implementation
-    const mockFns = {
-      createNewBoard: jest.fn().mockResolvedValue(true),
-      saveBoard: jest.fn().mockResolvedValue(true),
-      fetchNextState: jest.fn().mockResolvedValue(undefined),
-      skipGenerations: jest.fn().mockResolvedValue(undefined),
-      getFinalState: jest.fn().mockResolvedValue(undefined),
-      toggleSquare: jest.fn()
-    };
+    await renderWithBoardProvider(<Controls />, {
+      createCleanBoard
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('new-board-button'));
+    });
+
+    expect(createCleanBoard).toHaveBeenCalled();
+  });
+
+  it('creates a board when Save board is clicked without existing board', async () => {
+    const createBoard = jest.fn().mockResolvedValue(true);
     
-    mockUseBoard.mockReturnValue({
-      board: {
-        id: '1',
-        generation: 1,
-        dimensions: { width: 50, height: 50 },
-        livingCells: []
-      },
-      boardId: '1',
-      loading: false,
-      error: null,
-      localChanges: false,
-      ...mockFns
+    await renderWithBoardProvider(<Controls />, {
+      boardId: null,
+      createBoard
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('save-board-button'));
+    });
+
+    expect(createBoard).toHaveBeenCalled();
+  });
+
+  it('saves board when Save board is clicked with existing board', async () => {
+    const saveBoard = jest.fn().mockResolvedValue(true);
+    
+    await renderWithBoardProvider(<Controls />, {
+      boardId: 'test-id',
+      board: mockBoardWithCells,
+      saveBoard
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('save-board-button'));
+    });
+
+    expect(saveBoard).toHaveBeenCalled();
+  });
+
+  it('loads a board when Load button is clicked with valid ID', async () => {
+    const loadBoard = jest.fn().mockResolvedValue(true);
+    
+    await renderWithBoardProvider(<Controls />, {
+      loadBoard
+    });
+
+    const input = screen.getByTestId('board-id-input');
+    fireEvent.change(input, { target: { value: 'test-board-id' } });
+    
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('load-board-button'));
+    });
+
+    expect(loadBoard).toHaveBeenCalledWith('test-board-id');
+  });
+
+  it('shows error when trying to load without board ID', async () => {
+    await renderWithBoardProvider(<Controls />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('load-board-button'));
+    });
+
+    expect(screen.getByTestId('error-message')).toHaveTextContent('Please enter a board ID');
+  });
+
+  it('advances to next generation when Next generation button is clicked', async () => {
+    const fetchNextState = jest.fn().mockResolvedValue(true);
+    
+    await renderWithBoardProvider(<Controls />, {
+      boardId: 'test-id',
+      board: mockBoardWithCells,
+      fetchNextState
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('next-generation-button'));
+    });
+
+    expect(fetchNextState).toHaveBeenCalled();
+  });
+
+  it('handles simulation start/stop', async () => {
+    await renderWithBoardProvider(<Controls />, {
+      boardId: 'test-id',
+      board: mockBoardWithCells
+    });
+
+    const simulationButton = screen.getByTestId('simulation-button');
+    expect(simulationButton).not.toBeDisabled();
+    
+    // Start simulation
+    await act(async () => {
+      fireEvent.click(simulationButton);
+    });
+    expect(simulationButton).toHaveTextContent(/Stop simulation/);
+
+    // Stop simulation
+    await act(async () => {
+      fireEvent.click(simulationButton);
+    });
+    expect(simulationButton).toHaveTextContent(/Start simulation/);
+  });
+
+  it('skips generations when Skip button is clicked', async () => {
+    const skipGenerations = jest.fn().mockResolvedValue(true);
+    
+    await renderWithBoardProvider(<Controls />, {
+      boardId: 'test-id',
+      board: mockBoardWithCells,
+      skipGenerations
+    });
+
+    const input = screen.getByTestId('generations-input');
+    fireEvent.change(input, { target: { value: '5' } });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('skip-button'));
+    });
+
+    expect(skipGenerations).toHaveBeenCalledWith(5);
+  });
+
+  it('handles loading state', async () => {
+    await renderWithBoardProvider(<Controls />, {
+      boardId: 'test-id',
+      board: mockBoardWithCells,
+      loading: true
+    });
+
+    const buttons = [
+      'new-board-button',
+      'save-board-button',
+      'load-board-button',
+      'next-generation-button',
+      'skip-button',
+      'simulation-button'
+    ];
+
+    buttons.forEach(testId => {
+      const button = screen.getByTestId(testId);
+      expect(button).toBeDisabled();
     });
   });
 
-  it('renders all control buttons', () => {
-    render(<Controls />);
-    
-    expect(screen.getByText('New board')).toBeInTheDocument();
-    expect(screen.getByText('Save board')).toBeInTheDocument();
-    expect(screen.getByText('Start simulation')).toBeInTheDocument();
-    expect(screen.getByText('Next generation')).toBeInTheDocument();
-    expect(screen.getByText('Skip')).toBeInTheDocument();
-  });
-
-  it('highlights save button when there are local changes', () => {
-    mockUseBoard.mockReturnValue({
-      ...mockUseBoard(),
+  it('shows visual indicator for local changes', async () => {
+    await renderWithBoardProvider(<Controls />, {
+      boardId: 'test-id',
+      board: mockBoardWithCells,
       localChanges: true
     });
 
-    render(<Controls />);
-    const saveButton = screen.getByText('Save board');
-    expect(saveButton).toHaveClass('ring-2', 'ring-yellow-400');
+    const saveButton = screen.getByTestId('save-board-button');
+    expect(saveButton.className).toContain('ring-2');
+    expect(saveButton.className).toContain('ring-yellow-400');
   });
 
-  it('calls createNewBoard when clicking New board button', async () => {
-    const mockCreateNewBoard = jest.fn().mockResolvedValue(true);
-    mockUseBoard.mockReturnValue({
-      ...mockUseBoard(),
-      createNewBoard: mockCreateNewBoard
-    });
-
-    render(<Controls />);
-    fireEvent.click(screen.getByText('New board'));
-
-    await waitFor(() => {
-      expect(mockCreateNewBoard).toHaveBeenCalled();
-    });
-  });
-
-  it('calls saveBoard when clicking Save board button', async () => {
-    const mockSaveBoard = jest.fn().mockResolvedValue(true);
-    mockUseBoard.mockReturnValue({
-      ...mockUseBoard(),
-      saveBoard: mockSaveBoard
-    });
-
-    render(<Controls />);
-    fireEvent.click(screen.getByText('Save board'));
-
-    await waitFor(() => {
-      expect(mockSaveBoard).toHaveBeenCalled();
-    });
-  });
-
-  it('calls fetchNextState when clicking Next generation button', async () => {
-    const mockFetchNextState = jest.fn();
-    mockUseBoard.mockReturnValue({
-      ...mockUseBoard(),
-      fetchNextState: mockFetchNextState
-    });
-
-    render(<Controls />);
-    fireEvent.click(screen.getByText('Next generation'));
-
-    await waitFor(() => {
-      expect(mockFetchNextState).toHaveBeenCalled();
-    });
-  });
-
-  it('disables simulation controls when no board exists', () => {
-    mockUseBoard.mockReturnValue({
-      ...mockUseBoard(),
-      boardId: null
-    });
-
-    render(<Controls />);
+  it('handles errors during board operations', async () => {
+    const loadBoard = jest.fn().mockRejectedValue(new Error('Failed to load board'));
     
-    expect(screen.getByText('Start simulation')).toBeDisabled();
-    expect(screen.getByText('Next generation')).toBeDisabled();
-    expect(screen.getByText('Skip')).toBeDisabled();
-  });
-
-  it('displays error message when an operation fails', async () => {
-    const mockCreateNewBoard = jest.fn().mockRejectedValue(new Error('Test error'));
-    mockUseBoard.mockReturnValue({
-      ...mockUseBoard(),
-      createNewBoard: mockCreateNewBoard
+    await renderWithBoardProvider(<Controls />, {
+      loadBoard
     });
 
-    render(<Controls />);
-    fireEvent.click(screen.getByText('New board'));
+    const input = screen.getByTestId('board-id-input');
+    fireEvent.change(input, { target: { value: 'test-id' } });
 
-    await waitFor(() => {
-      expect(screen.getByText('Test error')).toBeInTheDocument();
-    });
-  });
-
-  it('updates skip generations input value and calls skipGenerations', async () => {
-    const mockSkipGenerations = jest.fn();
-    mockUseBoard.mockReturnValue({
-      ...mockUseBoard(),
-      skipGenerations: mockSkipGenerations
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('load-board-button'));
     });
 
-    render(<Controls />);
-    const input = screen.getByPlaceholderText('Generations to skip');
-    const skipButton = screen.getByText('Skip');
-    
-    fireEvent.change(input, { target: { value: '5' } });
-    expect(input).toHaveValue(5);
-
-    fireEvent.click(skipButton);
-
-    await waitFor(() => {
-      expect(mockSkipGenerations).toHaveBeenCalledWith(5);
-    });
+    expect(screen.getByTestId('error-message')).toHaveTextContent('Failed to load board');
   });
 });

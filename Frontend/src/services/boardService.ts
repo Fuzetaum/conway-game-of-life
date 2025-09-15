@@ -16,6 +16,11 @@ export const boardService = {
     return response.data;
   },
 
+  getById: async (id: string): Promise<Board> => {
+    const response = await api.get<Board>(`/api/board/${id}`);
+    return response.data;
+  },
+
   getNextState: async (id: string): Promise<Board> => {
     const response = await api.post<Board>(`/api/board/${id}/next`);
     return response.data;

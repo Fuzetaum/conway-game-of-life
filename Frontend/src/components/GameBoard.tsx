@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { useBoard } from '@hooks/useBoard';
+import { useBoard } from '@context/BoardContext';
 
 const GameBoard: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -51,7 +51,7 @@ const GameBoard: React.FC = () => {
 
         // Fill living cells if a board exists
         if (board) {
-          const isAlive = board.livingCells.some(cell => cell.x === x && cell.y === y);
+          const isAlive = board.livingCells.some(cell => cell.Column === x && cell.Row === y);
           if (isAlive) {
             ctx.fillStyle = '#000';
             ctx.fillRect(screenX, screenY, scale, scale);

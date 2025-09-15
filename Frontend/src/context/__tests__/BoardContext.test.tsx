@@ -45,8 +45,7 @@ describe('BoardContext', () => {
     });
 
     expect(boardService.create).toHaveBeenCalledWith({
-      dimensions: mockInitialBoard.dimensions,
-      livingCells: mockInitialBoard.livingCells
+      LivingCells: mockInitialBoard.livingCells
     });
     expect(result.current.board).toEqual(mockBoardWithCells);
     expect(result.current.boardId).toBe('test-board-id');
@@ -73,14 +72,14 @@ describe('BoardContext', () => {
       result.current.toggleSquare({ x: 0, y: 0 });
     });
 
-    expect(result.current.board.livingCells).toContainEqual({ x: 0, y: 0 });
+    expect(result.current.board.livingCells).toContainEqual({ Column: 0, Row: 0 });
     expect(result.current.localChanges).toBe(true);
 
     act(() => {
       result.current.toggleSquare({ x: 0, y: 0 });
     });
 
-    expect(result.current.board.livingCells).not.toContainEqual({ x: 0, y: 0 });
+    expect(result.current.board.livingCells).not.toContainEqual({ Column: 0, Row: 0 });
     expect(result.current.localChanges).toBe(true);
   });
 
@@ -99,7 +98,7 @@ describe('BoardContext', () => {
     });
 
     expect(boardService.update).toHaveBeenCalledWith('test-board-id', {
-      livingCells: mockBoardWithCells.livingCells
+      LivingCells: mockBoardWithCells.livingCells
     });
     expect(result.current.localChanges).toBe(false);
   });

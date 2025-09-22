@@ -40,7 +40,7 @@ namespace ConwayGameOfLife.Api.Controllers
             var board = await _boardRepository.GetByIdAsync(id);
             if (board == null)
                 return NotFound();
-
+            
             return Ok(MapToResponse(board));
         }
 

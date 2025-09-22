@@ -26,6 +26,7 @@ const GameBoard: React.FC = () => {
   }, [board, scale, offset]);
 
   const drawBoard = () => {
+    // 49bfe1ba-aeaa-49cb-b71d-705d06215869
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -42,6 +43,7 @@ const GameBoard: React.FC = () => {
     ctx.strokeStyle = '#ccc';
     ctx.lineWidth = 0.5;
 
+    console.log(board.livingCells);
     for (let x = 0; x < dimensions.width; x++) {
       for (let y = 0; y < dimensions.height; y++) {
         const screenX = x * scale + offset.x;
@@ -51,7 +53,7 @@ const GameBoard: React.FC = () => {
 
         // Fill living cells if a board exists
         if (board) {
-          const isAlive = board.livingCells.some(cell => cell.Column === x && cell.Row === y);
+          const isAlive = board.livingCells.some(cell => cell.column === x && cell.row === y);
           if (isAlive) {
             ctx.fillStyle = '#000';
             ctx.fillRect(screenX, screenY, scale, scale);

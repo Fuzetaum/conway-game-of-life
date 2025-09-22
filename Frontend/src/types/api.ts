@@ -1,6 +1,6 @@
 export interface Square {
-  Row: number;
-  Column: number;
+  row: number;
+  column: number;
 }
 
 export interface Board {

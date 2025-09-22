@@ -12,6 +12,7 @@ export const boardService = {
   },
 
   update: async (id: string, data: UpdateBoardRequest): Promise<Board> => {
+    console.log(id);
     const response = await api.put<Board>(`/api/board/${id}`, data);
     return response.data;
   },

@@ -47,10 +47,10 @@ namespace ConwayGameOfLife.Infrastructure.Data
 
         private class CellCoordinates
         {
-            [JsonPropertyName("row")]
+            [JsonPropertyName("Row")]
             public int Row { get; set; }
 
-            [JsonPropertyName("column")]
+            [JsonPropertyName("Column")]
             public int Column { get; set; }
         }
     }
